@@ -20,6 +20,21 @@
 # production
 /build
 
+# database & SQLite
+prisma/*.db
+prisma/*.db-journal
+
+# test & scratch scripts
+*.html
+test_*.js
+check_*.js
+fix_*.js
+parse_*.js
+clean_*.js
+dump_*.js
+inspect_*.js
+set_*.js
+
 # misc
 .DS_Store
 *.pem

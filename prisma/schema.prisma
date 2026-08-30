@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  passwordHash  String
+  role          String          @default("STUDENT") // STUDENT, MODERATOR, ADMIN
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  profile       StudentProfile?
+  bookmarks     Bookmark[]
+}
+
+model StudentProfile {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  rollNo        String    @unique
+  registerNo    String?
+  departmentId  String
+  batchId       String
+  semesterId    String
+  avatarUrl     String?
+  academicYear  String?
+  timetableHtml String?
+  
+  department    Department @relation(fields: [departmentId], references: [id])
+  batch         Batch      @relation(fields: [batchId], references: [id])
+  semester      Semester   @relation(fields: [semesterId], references: [id])
+  attendance    AttendanceRecord[]
+  tasks         Task[]
+  timetables    Timetable[]
+}
+
+model Department {
+  id            String    @id @default(uuid())
+  name          String
+  code          String    @unique
+  profiles      StudentProfile[]
+  batches       Batch[]
+  semesters     Semester[]
+}
+
+model Batch {
+  id            String    @id @default(uuid())
+  year          String
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  profiles      StudentProfile[]
+}
+
+model Semester {
+  id            String    @id @default(uuid())
+  number        Int
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  profiles      StudentProfile[]
+  offerings     SubjectOffering[]
+}
+
+model Subject {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  name          String
+  credits       Float
+  offerings     SubjectOffering[]
+}
+
+model SubjectOffering {
+  id            String    @id @default(uuid())
+  subjectId     String
+  semesterId    String
+  facultyName   String?
+  
+  subject       Subject   @relation(fields: [subjectId], references: [id])
+  semester      Semester  @relation(fields: [semesterId], references: [id])
+  attendance    AttendanceRecord[]
+  timetables    Timetable[]
+}
+
+model AttendanceRecord {
+  id                 String    @id @default(uuid())
+  studentId          String
+  subjectOfferingId  String
+  classesConducted   Int       @default(0)
+  classesAttended    Int       @default(0)
+  percentage         Float     @default(0.0)
+  lastSyncedAt       DateTime  @default(now())
+  
+  student            StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectOffering    SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectOfferingId])
+}
+
+model Resource {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  type          String    // NOTE, PYQ
+  fileUrl       String
+  fileType      String
+  fileSize      Int
+  subjectId     String
+  uploaderId    String
+  semesterId    String
+  academicYear  String?
+  createdAt     DateTime  @default(now())
+  status        String    @default("APPROVED") // PENDING, APPROVED, REJECTED
+  
+  bookmarks     Bookmark[]
+}
+
+model Bookmark {
+  id            String    @id @default(uuid())
+  userId        String
+  resourceId    String
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource      Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceId])
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  studentId     String
+  subjectId     String?
+  title         String
+  description   String?
+  deadline      DateTime?
+  priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status        String    @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED
+  
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Timetable {
+  id                 String    @id @default(uuid())
+  studentId          String
+  subjectOfferingId  String
+  dayOfWeek          Int       // 1 = Monday, 2 = Tuesday, etc.
+  period             Int
+  colspan            Int       @default(1)
+  time               String
+  room               String?
+  type               String    @default("THEORY") // THEORY, LAB
+  
+  student            StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectOffering    SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+}

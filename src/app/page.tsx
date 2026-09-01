@@ -1,4 +1,4 @@
-import { prisma, getOrCreateStudentProfile } from "@/lib/db";
+import { prisma, getStudentProfile } from "@/lib/db";
 import { calculateAttendance } from "@/lib/attendance";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +17,7 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const student = await getOrCreateStudentProfile(userRoll);
+  const student = await getStudentProfile(userRoll);
 
   if (!student) {
     redirect('/login');

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, RefreshCw, MoveHorizontal } from "lucide-react"
-import { prisma, getOrCreateStudentProfile } from "@/lib/db"
+import { prisma, getStudentProfile } from "@/lib/db"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -14,7 +14,7 @@ export default async function TimetablePage() {
     redirect('/login')
   }
 
-  const student = await getOrCreateStudentProfile(userRoll)
+  const student = await getStudentProfile(userRoll)
 
   if (!student) {
     redirect('/login')

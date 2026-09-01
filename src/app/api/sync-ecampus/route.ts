@@ -5,6 +5,23 @@ import * as cheerio from 'cheerio';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
 
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+  'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'same-origin',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+  'Referer': 'https://ecampus.psgtech.ac.in/studzone/',
+};
+
 export async function POST(req: Request) {
   try {
     const { rollno, password } = await req.json();
@@ -18,14 +35,15 @@ export async function POST(req: Request) {
     let timetableHtml = DEFAULT_TIMETABLE_HTML;
     let liveSynced = false;
 
-    // Try live eCampus sync with a 3.5-second timeout
+    // Try live eCampus sync with Chrome browser emulation and 8s timeout
     try {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       const jar = new CookieJar();
       const client = wrapper(axios.create({
         jar,
         withCredentials: true,
-        timeout: 3500, // 3.5s timeout for fast responsiveness
+        timeout: 8000,
+        headers: BROWSER_HEADERS,
       }));
 
       const loginUrl = 'https://ecampus.psgtech.ac.in/studzone/';
@@ -41,7 +59,10 @@ export async function POST(req: Request) {
         params.append('chkterms', 'on');
 
         const postRes = await client.post(loginUrl, params.toString(), {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          headers: { 
+            ...BROWSER_HEADERS,
+            'Content-Type': 'application/x-www-form-urlencoded' 
+          }
         });
 
         const responseText = postRes.data.toLowerCase();

@@ -121,8 +121,9 @@ export default function AttendanceSimulator({ subjects }: { subjects: SubjectIte
                 <Input
                   type="number"
                   min={0}
-                  value={plannedAttend}
-                  onChange={(e) => setPlannedAttend(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={plannedAttend === 0 ? "" : plannedAttend}
+                  onChange={(e) => setPlannedAttend(e.target.value === "" ? 0 : Math.max(0, parseInt(e.target.value) || 0))}
                   className="bg-card font-mono text-center font-bold text-lg h-10"
                 />
               </div>
@@ -132,8 +133,9 @@ export default function AttendanceSimulator({ subjects }: { subjects: SubjectIte
                 <Input
                   type="number"
                   min={0}
-                  value={plannedBunk}
-                  onChange={(e) => setPlannedBunk(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  value={plannedBunk === 0 ? "" : plannedBunk}
+                  onChange={(e) => setPlannedBunk(e.target.value === "" ? 0 : Math.max(0, parseInt(e.target.value) || 0))}
                   className="bg-card font-mono text-center font-bold text-lg h-10"
                 />
               </div>

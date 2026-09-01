@@ -24,7 +24,7 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
   const [tutorial1, setTutorial1] = useState<number>(5); // out of 6
   const [tutorial2, setTutorial2] = useState<number>(5); // out of 6
   const [assignment, setAssignment] = useState<number>(6); // out of 8
-  const [targetGrade, setTargetGrade] = useState<'O' | 'A' | 'B+' | 'B' | 'C'>('O');
+  const [targetGrade, setTargetGrade] = useState<'10' | '9' | '8' | '7' | '6' | '5'>('10');
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId) || subjects[0];
 
@@ -47,6 +47,15 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
     ? `${selectedSubject.subjectCode} — ${cleanSubjectName(selectedSubject.subjectName)}`
     : "Choose course";
 
+  const gradeOptions: Array<{ id: '10' | '9' | '8' | '7' | '6' | '5'; label: string; min: number }> = [
+    { id: '10', label: '10 (91+)', min: 91 },
+    { id: '9', label: '9 (81+)', min: 81 },
+    { id: '8', label: '8 (70+)', min: 70 },
+    { id: '7', label: '7 (60+)', min: 60 },
+    { id: '6', label: '6 (55+)', min: 55 },
+    { id: '5', label: '5 (50+)', min: 50 },
+  ];
+
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-md">
       <CardHeader>
@@ -66,7 +75,7 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => { setCa1(30); setCa2(32); setTutorial1(5); setTutorial2(5); setAssignment(6); setTargetGrade('O'); }}
+            onClick={() => { setCa1(30); setCa2(32); setTutorial1(5); setTutorial2(5); setAssignment(6); setTargetGrade('10'); }}
             className="text-xs gap-1.5"
           >
             <RefreshCcw className="w-3.5 h-3.5" />
@@ -101,17 +110,17 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
 
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Desired Target Grade</Label>
-              <div className="grid grid-cols-5 gap-2 mt-2">
-                {(['O', 'A', 'B+', 'B', 'C'] as const).map(g => (
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {gradeOptions.map(g => (
                   <Button
-                    key={g}
+                    key={g.id}
                     type="button"
-                    variant={targetGrade === g ? "default" : "outline"}
+                    variant={targetGrade === g.id ? "default" : "outline"}
                     size="sm"
-                    className="text-xs font-bold"
-                    onClick={() => setTargetGrade(g)}
+                    className="text-xs font-bold px-2 py-1.5"
+                    onClick={() => setTargetGrade(g.id)}
                   >
-                    {g}
+                    Grade {g.label}
                   </Button>
                 ))}
               </div>
@@ -125,8 +134,9 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
                   type="number"
                   min={0}
                   max={40}
-                  value={ca1}
-                  onChange={(e) => setCa1(Math.min(40, Math.max(0, parseInt(e.target.value) || 0)))}
+                  placeholder="0"
+                  value={ca1 === 0 ? "" : ca1}
+                  onChange={(e) => setCa1(e.target.value === "" ? 0 : Math.min(40, Math.max(0, parseInt(e.target.value) || 0)))}
                   className="bg-card font-mono text-center font-bold h-10"
                 />
               </div>
@@ -137,8 +147,9 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
                   type="number"
                   min={0}
                   max={40}
-                  value={ca2}
-                  onChange={(e) => setCa2(Math.min(40, Math.max(0, parseInt(e.target.value) || 0)))}
+                  placeholder="0"
+                  value={ca2 === 0 ? "" : ca2}
+                  onChange={(e) => setCa2(e.target.value === "" ? 0 : Math.min(40, Math.max(0, parseInt(e.target.value) || 0)))}
                   className="bg-card font-mono text-center font-bold h-10"
                 />
               </div>
@@ -151,8 +162,9 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
                   type="number"
                   min={0}
                   max={6}
-                  value={tutorial1}
-                  onChange={(e) => setTutorial1(Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
+                  placeholder="0"
+                  value={tutorial1 === 0 ? "" : tutorial1}
+                  onChange={(e) => setTutorial1(e.target.value === "" ? 0 : Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
                   className="bg-card font-mono text-center font-bold h-10"
                 />
               </div>
@@ -163,8 +175,9 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
                   type="number"
                   min={0}
                   max={6}
-                  value={tutorial2}
-                  onChange={(e) => setTutorial2(Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
+                  placeholder="0"
+                  value={tutorial2 === 0 ? "" : tutorial2}
+                  onChange={(e) => setTutorial2(e.target.value === "" ? 0 : Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
                   className="bg-card font-mono text-center font-bold h-10"
                 />
               </div>
@@ -175,8 +188,9 @@ export default function CAGradePredictor({ subjects }: { subjects: SubjectItem[]
                   type="number"
                   min={0}
                   max={8}
-                  value={assignment}
-                  onChange={(e) => setAssignment(Math.min(8, Math.max(0, parseInt(e.target.value) || 0)))}
+                  placeholder="0"
+                  value={assignment === 0 ? "" : assignment}
+                  onChange={(e) => setAssignment(e.target.value === "" ? 0 : Math.min(8, Math.max(0, parseInt(e.target.value) || 0)))}
                   className="bg-card font-mono text-center font-bold h-10"
                 />
               </div>

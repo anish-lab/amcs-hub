@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, getOrCreateStudentProfile } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import CAGradePredictor from "@/components/dashboard/CAGradePredictor";
 import { cookies } from "next/headers";
@@ -15,20 +15,7 @@ export default async function CAPredictorPage() {
     redirect('/login');
   }
 
-  const student = await prisma.studentProfile.findUnique({
-    where: { rollNo: userRoll.toUpperCase() },
-    include: {
-      attendance: {
-        include: {
-          subjectOffering: {
-            include: {
-              subject: true
-            }
-          }
-        }
-      }
-    }
-  });
+  const student = await getOrCreateStudentProfile(userRoll);
 
   if (!student) {
     redirect('/login');

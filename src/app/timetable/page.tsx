@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, RefreshCw, MoveHorizontal } from "lucide-react"
-import { prisma } from "@/lib/db"
+import { prisma, getOrCreateStudentProfile } from "@/lib/db"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -14,9 +14,7 @@ export default async function TimetablePage() {
     redirect('/login')
   }
 
-  const student = await prisma.studentProfile.findUnique({
-    where: { rollNo: userRoll.toUpperCase() }
-  })
+  const student = await getOrCreateStudentProfile(userRoll)
 
   if (!student) {
     redirect('/login')

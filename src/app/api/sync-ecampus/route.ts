@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import * as cheerio from 'cheerio';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -34,27 +35,49 @@ export async function POST(req: Request) {
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     const jar = new CookieJar();
+
+    // Configure optional proxy agent if PROXY_URL or HTTP_PROXY is defined
+    const proxyUrl = process.env.PROXY_URL || process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+    const httpsAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+
     const client = wrapper(axios.create({
       jar,
       withCredentials: true,
-      timeout: 20000, // 20s timeout for live college portal
+      timeout: 15000,
       headers: BROWSER_HEADERS,
+      httpsAgent,
     }));
 
     // 1. Fetch Login Page for CSRF Token
     const loginUrl = 'https://ecampus.psgtech.ac.in/studzone/';
-    const loginRes = await client.get(loginUrl).catch((err) => {
-      throw new Error(`eCampus portal is currently unreachable: ${err.message}`);
-    });
+    let loginRes;
+    try {
+      loginRes = await client.get(loginUrl);
+    } catch (err: any) {
+      const axiosErr = err as AxiosError;
+      if (axiosErr.response?.status === 403) {
+        return NextResponse.json({ 
+          error: "eCampus Firewall Error (403 Forbidden): Access blocked. Please check Proxy configuration." 
+        }, { status: 403 });
+      }
+      if (axiosErr.code === 'ETIMEDOUT' || axiosErr.code === 'ECONNABORTED') {
+        return NextResponse.json({ 
+          error: "eCampus Network Timeout (ETIMEDOUT): Unable to establish connection to college servers." 
+        }, { status: 504 });
+      }
+      return NextResponse.json({ 
+        error: `eCampus Connection Failed: ${axiosErr.message || "Network unreachable"}` 
+      }, { status: 502 });
+    }
 
     const $login = cheerio.load(loginRes.data);
     const token = $login('input[name="__RequestVerificationToken"]').val();
 
     if (!token) {
-      return NextResponse.json({ error: "Failed to connect to eCampus portal. CSRF token missing." }, { status: 502 });
+      return NextResponse.json({ error: "Failed to connect to eCampus portal. Verification token missing." }, { status: 502 });
     }
 
-    // 2. Perform Login POST
+    // 2. Perform Login POST with token & ToughCookie session state
     const params = new URLSearchParams();
     params.append('rollno', formattedRoll);
     params.append('password', password.trim());
@@ -77,7 +100,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid eCampus credentials. Please check your roll number and password." }, { status: 401 });
     }
 
-    // 3. Fetch Timetable page to extract Student Name & Live Timetable HTML
+    // 3. Fetch Timetable page using serialized CookieJar session state
     let studentName = "Student";
     let timetableHtml = "";
     const subjectMap: Record<string, string> = {};
@@ -103,7 +126,6 @@ export async function POST(req: Request) {
       if (tableElement.length > 0) {
         timetableHtml = $tt.html(tableElement);
 
-        // Map subject codes to full names from timetable
         const rows = tableElement.find('tr').toArray();
         rows.slice(2).forEach((rEl) => {
           const tds = $tt(rEl).find('td').toArray();
@@ -166,7 +188,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No active attendance records found on eCampus for this account." }, { status: 404 });
     }
 
-    // Setup DB User & Profile for this student
+    // Persist records into PostgreSQL Database
     let user = await prisma.user.findUnique({ where: { email: `${formattedRoll.toLowerCase()}@psgtech.ac.in` } });
     if (!user) {
       user = await prisma.user.create({
@@ -205,7 +227,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Clear old attendance records for this profile and insert freshly scraped live data ONLY
     await prisma.attendanceRecord.deleteMany({ where: { studentId: profile.id } });
 
     for (const c of liveRecords) {
@@ -240,7 +261,13 @@ export async function POST(req: Request) {
     }
 
     const response = NextResponse.json({ success: true, rollNo: formattedRoll, name: studentName });
-    response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', httpOnly: true });
+    response.cookies.set('user_roll', formattedRoll, { 
+      path: '/', 
+      maxAge: 60 * 60 * 24 * 7, 
+      sameSite: 'lax', 
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production'
+    });
     return response;
 
   } catch (error: any) {

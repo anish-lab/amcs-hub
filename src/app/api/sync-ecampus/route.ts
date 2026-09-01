@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     const formattedRoll = rollno.toUpperCase().trim();
-    let studentName = "ANISH M";
+    let studentName = formattedRoll === "24PT04" ? "ANISH M" : `Student ${formattedRoll}`;
     let timetableHtml = SAMPLE_TIMETABLE_HTML;
     let liveSynced = false;
 
@@ -159,20 +159,20 @@ export async function POST(req: Request) {
           if (liveRecords.length > 0) {
             await updateDatabaseRecords(formattedRoll, studentName, timetableHtml, liveRecords);
             const response = NextResponse.json({ success: true, rollNo: formattedRoll, name: studentName, liveSynced: true });
-            response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7 });
+            response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', httpOnly: true });
             return response;
           }
         }
       }
     } catch (netErr: any) {
-      console.warn("eCampus network timeout/unreachable. Falling back to local offline profile sync:", netErr.message);
+      console.warn("eCampus network timeout/unreachable. Falling back to local profile sync:", netErr.message);
     }
 
-    // Fallback path: eCampus server offline or timing out -> Authenticate locally & seed database
+    // Fallback path: eCampus server offline or timing out -> Authenticate locally & seed database per roll number
     await updateDatabaseRecords(formattedRoll, studentName, timetableHtml, SAMPLE_COURSES);
 
     const response = NextResponse.json({ success: true, rollNo: formattedRoll, name: studentName, offlineFallback: true });
-    response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7 });
+    response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', httpOnly: true });
     return response;
 
   } catch (error: any) {
@@ -225,7 +225,7 @@ async function updateDatabaseRecords(
     });
   }
 
-  // Clear existing attendance records for this student and insert updated courses
+  // Clear existing attendance records for this specific student and insert updated courses
   await prisma.attendanceRecord.deleteMany({ where: { studentId: profile.id } });
 
   for (const c of courses) {

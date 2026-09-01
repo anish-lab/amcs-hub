@@ -159,7 +159,8 @@ export async function POST(req: Request) {
           if (liveRecords.length > 0) {
             await updateDatabaseRecords(formattedRoll, studentName, timetableHtml, liveRecords);
             const response = NextResponse.json({ success: true, rollNo: formattedRoll, name: studentName, liveSynced: true });
-            response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', httpOnly: true });
+            // Strict Session Cookie (auto-expires when browser/tab is closed)
+            response.cookies.set('user_roll', formattedRoll, { path: '/', sameSite: 'lax', httpOnly: true });
             return response;
           }
         }
@@ -172,7 +173,8 @@ export async function POST(req: Request) {
     await updateDatabaseRecords(formattedRoll, studentName, timetableHtml, SAMPLE_COURSES);
 
     const response = NextResponse.json({ success: true, rollNo: formattedRoll, name: studentName, offlineFallback: true });
-    response.cookies.set('user_roll', formattedRoll, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', httpOnly: true });
+    // Strict Session Cookie (auto-expires when browser/tab is closed)
+    response.cookies.set('user_roll', formattedRoll, { path: '/', sameSite: 'lax', httpOnly: true });
     return response;
 
   } catch (error: any) {

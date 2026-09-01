@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Sidebar from "@/components/layout/sidebar";
 import MobileNav from "@/components/layout/mobile-nav";
+import IdleLogout from "@/components/layout/idle-logout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <IdleLogout />
           <div className="flex h-screen overflow-hidden bg-background">
             <Sidebar />
             <div className="flex flex-col flex-1 overflow-hidden">
